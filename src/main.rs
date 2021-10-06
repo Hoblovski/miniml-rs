@@ -1,7 +1,7 @@
 use std::io::Read;
 
 extern crate tut;
-use tut::parser::parse_top;
+use tut::parser::parse;
 
 fn main() {
     let mut buf = String::new();
@@ -9,5 +9,5 @@ fn main() {
         .read_to_string(&mut buf)
         .expect("cannot read from stdin");
 
-    parse_top(&buf);
+    let i = parse(&buf).unwrap();
 }

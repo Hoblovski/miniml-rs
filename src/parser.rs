@@ -2,16 +2,21 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::*,
-    combinator::{map, map_opt, map_res, opt, recognize, verify},
+    combinator::{eof, map, map_opt, map_res, opt, recognize, verify},
     error::ParseError,
     multi::{many0, separated_list1},
-    sequence::{delimited, pair, preceded, separated_pair, tuple},
+    sequence::{terminated, delimited, pair, preceded, separated_pair, tuple},
     IResult,
 };
 
 use phf::phf_set;
 
 use std::str::FromStr;
+
+#[derive(Debug)]
+pub enum MiniMLErr {
+    ParseError(String),
+}
 
 #[derive(Debug)]
 pub struct Top {}
@@ -79,6 +84,11 @@ pub enum Expr {
     Nth(i64, Box<Expr>),
     Ite(Box<Expr>, Box<Expr>, Box<Expr>),
     LetRec(Vec<LetRecArm>, Box<Expr>),
+}
+
+#[derive(Debug)]
+pub struct Prog {
+    main_expr: Expr,
 }
 
 ///////////////////////////////////////////////////////////
@@ -299,7 +309,7 @@ fn ite(i: &str) -> IResult<&str, Expr> {
 }
 
 fn seq(i: &str) -> IResult<&str, Expr> {
-    let (i, o) = separated_list1(tag(";"), ite)(i)?;
+    let (i, o) = separated_list1(wstag(";"), ite)(i)?;
     if o.len() == 1 {
         // prevent redundant seq's
         let o = o.into_iter().nth(0).unwrap();
@@ -388,21 +398,35 @@ fn ty_paren(i: &str) -> IResult<&str, Ty> {
     delimited(wstag("("), ty, wstag(")"))(i)
 }
 
+fn ty_atom(i: &str) -> IResult<&str, Ty> {
+    alt((ty_paren, ty_base))(i)
+}
+
 fn ty_lam(i: &str) -> IResult<&str, Ty> {
-    let (i, (lhs, rhs)) = separated_pair(ty, wstag("->"), ty)(i)?;
-    let o = Ty::AbsTy(Box::new(lhs), Box::new(rhs));
-    Ok((i, o))
+    let (i, o) = separated_list1(wstag("->"), ty_atom)(i)?;
+    if o.len() == 1 {
+        // prevent redundant lam's
+        let o = o.into_iter().nth(0).unwrap();
+        Ok((i, o))
+    } else {
+        // rev because -> is r-assoc
+        let o = o.into_iter().rev().reduce(|rhs, lhs|
+            Ty::AbsTy(Box::new(lhs), Box::new(rhs))).unwrap();
+        Ok((i, o))
+    }
 }
 
 fn ty(i: &str) -> IResult<&str, Ty> {
-    alt((ty_base, ty_paren, ty_lam))(i)
+    ty_lam(i)
 }
 ///////////////////////////////////////////////////////////
 /// Tops
 
-pub fn parse_top(buf: &str) {
-    let r = expr(buf);
-    println!("{:?}", r);
+pub fn parse(buf: &str) -> Result<Prog, MiniMLErr> {
+    let (_, main_expr) = terminated(ws(expr), eof)(buf).unwrap();
+    let prog = Prog { main_expr };
+    println!("Prog is {:#?}", prog);
+    Ok(prog)
 }
 
 // From recipe
