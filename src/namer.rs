@@ -75,7 +75,7 @@ impl ExprVisitorMut<NamerResult> for Namer {
         match e {
             Expr::Abs {
                 arg_name,
-                arg_ty,
+                arg_ty: _,
                 box body,
             } => {
                 let new = self.def_var(arg_name);
@@ -92,7 +92,7 @@ impl ExprVisitorMut<NamerResult> for Namer {
         match e {
             Expr::Let {
                 name,
-                ty,
+                ty: _,
                 box val,
                 box body,
             } => {

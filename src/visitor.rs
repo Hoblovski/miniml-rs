@@ -1,5 +1,5 @@
 /// Provides basic visitors.
-use crate::parser::{BinOp, Expr, LetRecArm, Prog, Ty, UnaOp};
+use crate::parser::{Expr};
 
 // TODO
 // pub trait ExprVisitor<R: Default> {
@@ -13,7 +13,7 @@ pub trait ExprVisitorMut<R> {
         panic!("undefined default")
     }
 
-    fn join_results(&mut self, res: Vec<R>) -> R {
+    fn join_results(&mut self, _res: Vec<R>) -> R {
         // match res.into_iter().nth(0) {
         //     Some(x) => x,
         //     None => Default::default(),
@@ -82,13 +82,13 @@ pub trait ExprVisitorMut<R> {
         match e {
             Binary {
                 box lhs,
-                op,
+                op: _,
                 box rhs,
             } => {
                 let chs = vec![self.visit(lhs), self.visit(rhs)];
                 self.join_results(chs)
             }
-            Unary { op, box sub } => {
+            Unary { op: _, box sub } => {
                 let chs = vec![self.visit(sub)];
                 self.join_results(chs)
             }
@@ -101,16 +101,16 @@ pub trait ExprVisitorMut<R> {
                 self.join_results(chs)
             }
             Abs {
-                arg_name,
-                arg_ty,
+                arg_name: _,
+                arg_ty: _,
                 box body,
             } => {
                 let chs = vec![self.visit(body)];
                 self.join_results(chs)
             }
             Let {
-                name,
-                ty,
+                name: _,
+                ty: _,
                 val,
                 body,
             } => {
@@ -121,7 +121,7 @@ pub trait ExprVisitorMut<R> {
                 let chs = subs.iter_mut().map(|x| self.visit(x)).collect();
                 self.join_results(chs)
             }
-            Nth { idx, box sub } => {
+            Nth { idx: _, box sub } => {
                 let chs = vec![self.visit(sub)];
                 self.join_results(chs)
             }
