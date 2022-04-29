@@ -1,4 +1,5 @@
-use crate::parser::Expr;
+use crate::ast::*;
+/// The namer pass.
 use crate::utils::*;
 use crate::visitor::ExprVisitorMut;
 
@@ -6,8 +7,10 @@ use std::collections::HashMap;
 use std::result::Result;
 use std::vec::Vec;
 
+/// Visits the AST and renames the variables into unique names.
+/// Basically does an alpha conversion pass.
 pub struct Namer {
-    name_suffix: HashMap<String, i64>,
+    name_cnt: HashMap<String, i64>,
     vars: Vec<(String, String)>,
 }
 
@@ -21,14 +24,14 @@ type NamerResult = Result<(), NamerErrKind>;
 
 impl Namer {
     pub fn new() -> Self {
-        let name_suffix = HashMap::new();
+        let name_cnt = HashMap::new();
         let vars = Vec::new();
-        Namer { name_suffix, vars }
+        Namer { name_cnt, vars }
     }
 
     fn gen_name(&mut self, name: &str) -> String {
-        let suffix = *self.name_suffix.get(name).unwrap_or(&0);
-        self.name_suffix.insert(name.to_string(), suffix + 1);
+        let suffix = *self.name_cnt.get(name).unwrap_or(&0);
+        self.name_cnt.insert(name.to_string(), suffix + 1);
         return format!("{}{}@{}", "_", name, suffix);
     }
 

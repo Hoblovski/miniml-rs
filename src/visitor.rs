@@ -1,23 +1,14 @@
 /// Provides basic visitors.
-use crate::parser::{Expr};
-
-// TODO
-// pub trait ExprVisitor<R: Default> {
-//     /// The visitor itself is mut so we are able to store bookkeeping info.
-// }
+use crate::ast::*;
 
 pub trait ExprVisitorMut<R> {
     /// The visitor itself is mut so we are able to store bookkeeping info.
+    /// The visited node is mut so we can mutate the node.
+    /// R is the return type for visitor functions.
 
-    fn default(&mut self) -> R {
-        panic!("undefined default")
-    }
+    fn default(&mut self) -> R;
 
     fn join_results(&mut self, _res: Vec<R>) -> R {
-        // match res.into_iter().nth(0) {
-        //     Some(x) => x,
-        //     None => Default::default(),
-        // }
         self.default()
     }
 

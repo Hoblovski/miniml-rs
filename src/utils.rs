@@ -1,3 +1,5 @@
+/// Utilities
+
 pub fn uniq<I>(it: I) -> bool
 where
     I: Iterator,
