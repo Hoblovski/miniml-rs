@@ -1,6 +1,7 @@
 /// Provides basic visitors.
 use crate::ast::*;
 
+// TODO: use proc macro
 pub trait ExprVisitorMut<R> {
     /// The visitor itself is mut so we are able to store bookkeeping info.
     /// The visited node is mut so we can mutate the node.
