@@ -1,7 +1,16 @@
+// Only context-free grammar
 grammar MiniML;
 
 top
-    : expr EOF
+    : dataType* expr EOF
+    ;
+
+dataType
+    : 'datatype' Ident '=' dataTypeArm* 'end'
+    ;
+
+dataTypeArm
+    : '|' Ident ty+     // nullary constructors cause ambiguity
     ;
 
 expr
@@ -15,26 +24,31 @@ let
     ;
 
 letRecArm
-    : Ident (':' ty)? '=' '\\' Ident (':' ty)? '->' expr
+    : Ident (':' t1=ty)? '=' '\\' Ident (':' t2=ty)? '->' expr
     ;
-    // let-rec arms are hard-wired to abstractions
 
 mat
     : lam                                     # mat_
-    | 'match' expr ('|' ptn '->' expr)+ 'end' # mat1
+    | 'match' expr matchArm+ 'end' # mat1
+    ;
+
+matchArm
+    : '|' ptn '->' body=expr
     ;
 
 ptn
-    : ptn1
-    ;
-
-ptn1
-    : ptn0             # ptn1_
-    | ptn0 (',' ptn0)+ # ptnTuple
+    : ptn0
     ;
 
 ptn0
+    : ptn1 (',' ptn1)+ # ptnTuple
+    | ptn1             # ptn1_
+    | Ident ptn1+      # ptnData
+    ;
+
+ptn1
     : Ident          # ptnBinder
+    | lit            # ptnLit
     | '(' ptn ')'    # ptnParen
     ;
 
@@ -78,23 +92,31 @@ app
     ;
 
 atom
-    : '(' ')'                  # atomUnit
-    | '(' expr (',' expr)+ ')' # atomTuple
+    : '(' expr (',' expr)+ ')' # atomTuple
     | lit                      # atomLit
     | Ident                    # atomIdent
     | '(' expr ')'             # atomParen
-    | 'println'                # atomPrint
+    | builtin                  # atomBuiltin
     | 'nth' Integer atom       # atomNth
     ;
 
+builtin
+    : 'println'
+    | 'print'
+    | 'panic'
+    ;
+
 lit
-    : Integer # litInt
+    : Integer                  # litInt
+    | '(' ')'                  # litUnit
+    | ('false' | 'true')       # litBool
     ;
 
 ty
     : 'unit'                   # tyUnit
     | 'int'                    # tyInt
     | '(' ty ')'               # tyParen
+    | Ident                    # tyIdent
     | <assoc=right> ty '->' ty # tyArrow
     ;
 

@@ -25,8 +25,10 @@ static KEYWORDS: phf::Set<&'static str> = phf_set! {
     "then",
     "rec",
     "and",
-    "nth",
+    "match",
+    "end",
 
+    "datatype",
     "int",
     "bool",
     "unit",
@@ -48,14 +50,15 @@ pub fn is_keyword(i: &str) -> bool {
     KEYWORDS.contains(i)
 }
 
+/// Simply a regex like ident, but does not filter out keywords.
 pub fn identlike(i: &str) -> IResult<&str, &str> {
-    // like ident, but does not filter out keywords
     ws(recognize(pair(
         alt((alpha1, tag("_"))),
         many0(alt((alphanumeric1, tag("_")))),
     )))(i)
 }
 
+/// Identifier i.e. satisfies the regex and is not a keyword.
 pub fn ident(i: &str) -> IResult<&str, String> {
     let (i, s) = verify(identlike, |s: &str| !is_keyword(s))(i)?;
     Ok((i, String::from(s)))

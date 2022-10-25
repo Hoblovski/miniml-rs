@@ -1,20 +1,17 @@
 use crate::ast::*;
 use crate::error::*;
-use expr::expr;
+use crate::parser::ops::ws;
 use nom::{combinator::eof, sequence::terminated};
-use ops::ws;
+use top::top;
 
 mod expr;
-/// Parse program to AST.
 mod ops;
+mod top;
 mod types;
 
-///////////////////////////////////////////////////////////
-/// Tops
-
 pub fn parse(buf: &str) -> Result<Prog, MiniMLErr> {
-    let (_, main_expr) = terminated(ws(expr), eof)(buf).unwrap();
-    let prog = Prog { main_expr };
+    let parse_res = terminated(ws(top), eof)(buf);
+    let prog = parse_res.expect("parsing failed").1;
     println!("Prog is {:#?}", prog);
     println!("===============================");
     Ok(prog)

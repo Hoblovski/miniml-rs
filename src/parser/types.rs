@@ -17,8 +17,14 @@ pub fn ty_paren(i: &str) -> IResult<&str, Ty> {
     delimited(wstag("("), ty, wstag(")"))(i)
 }
 
+pub fn ty_data_type(i: &str) -> IResult<&str, Ty> {
+    let (i, name) = ident(i)?;
+    let o = Ty::DataTy(name);
+    Ok((i, o))
+}
+
 pub fn ty_atom(i: &str) -> IResult<&str, Ty> {
-    alt((ty_paren, ty_base))(i)
+    alt((ty_paren, ty_base, ty_data_type))(i)
 }
 
 pub fn ty_lam(i: &str) -> IResult<&str, Ty> {

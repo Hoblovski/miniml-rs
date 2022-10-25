@@ -60,80 +60,78 @@ impl ExprVisitorMut<NamerResult> for Namer {
     }
 
     fn visit_varref(&mut self, e: &mut Expr) -> NamerResult {
-        match e {
-            Expr::VarRef { id } => {
-                for (old, new) in self.vars.iter().rev() {
-                    if old == id {
-                        *id = new.clone();
-                        return Ok(());
-                    }
+        if let Expr::VarRef { id } = e {
+            for (old, new) in self.vars.iter().rev() {
+                if old == id {
+                    *id = new.clone();
+                    return Ok(());
                 }
-                Err(NamerErrKind::UnknownVarRef { id: id.clone() })
             }
-            _ => unreachable!(),
+            Err(NamerErrKind::UnknownVarRef { id: id.clone() })
+        } else {
+            unreachable!()
         }
     }
 
     fn visit_abs(&mut self, e: &mut Expr) -> NamerResult {
-        match e {
-            Expr::Abs {
-                arg_name,
-                arg_ty: _,
-                box body,
-            } => {
-                let new = self.def_var(arg_name);
-                *arg_name = new;
-                self.visit(body)?;
-                self.undef_var(arg_name);
-                Ok(())
-            }
-            _ => unreachable!(),
+        if let Expr::Abs {
+            arg_name,
+            arg_ty: _,
+            box body,
+        } = e
+        {
+            let new = self.def_var(arg_name);
+            *arg_name = new;
+            self.visit(body)?;
+            self.undef_var(arg_name);
+            Ok(())
+        } else {
+            unreachable!()
         }
     }
 
     fn visit_let(&mut self, e: &mut Expr) -> NamerResult {
-        match e {
-            Expr::Let {
-                name,
-                ty: _,
-                box val,
-                box body,
-            } => {
-                *name = self.def_var(name);
-                self.visit(val)?;
-                self.visit(body)?;
-                self.undef_var(name);
-                Ok(())
-            }
-            _ => unreachable!(),
+        if let Expr::Let {
+            name,
+            ty: _,
+            box val,
+            box body,
+        } = e
+        {
+            *name = self.def_var(name);
+            self.visit(val)?;
+            self.visit(body)?;
+            self.undef_var(name);
+            Ok(())
+        } else {
+            unreachable!()
         }
     }
 
     fn visit_letrec(&mut self, e: &mut Expr) -> NamerResult {
-        match e {
-            Expr::LetRec { arms, box body } => {
-                if !uniq(arms.iter().map(|x| &x.fn_name)) {
-                    return Err(NamerErrKind::DuplicateLetRecFn {});
-                }
-
-                for arm in arms.iter_mut() {
-                    arm.fn_name = self.def_var(&arm.fn_name);
-                }
-
-                for arm in arms.iter_mut() {
-                    arm.arg_name = self.def_var(&arm.arg_name);
-                    self.visit(&mut arm.body)?;
-                    self.undef_var(&arm.arg_name);
-                }
-
-                self.visit(body)?;
-
-                for arm in arms.iter_mut() {
-                    self.undef_var(&arm.fn_name);
-                }
-                Ok(())
+        if let Expr::LetRec { arms, box body } = e {
+            if !uniq(arms.iter().map(|x| &x.fn_name)) {
+                return Err(NamerErrKind::DuplicateLetRecFn {});
             }
-            _ => unreachable!(),
+
+            for arm in arms.iter_mut() {
+                arm.fn_name = self.def_var(&arm.fn_name);
+            }
+
+            for arm in arms.iter_mut() {
+                arm.arg_name = self.def_var(&arm.arg_name);
+                self.visit(&mut arm.body)?;
+                self.undef_var(&arm.arg_name);
+            }
+
+            self.visit(body)?;
+
+            for arm in arms.iter_mut() {
+                self.undef_var(&arm.fn_name);
+            }
+            Ok(())
+        } else {
+            unreachable!()
         }
     }
 }

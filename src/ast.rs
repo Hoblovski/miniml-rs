@@ -1,7 +1,12 @@
 /// AST node definitions.
-
-#[derive(Debug)]
-pub struct Top {}
+///
+/// String literals are String rather than &str.
+/// Because a node can be mutated and the lifetime of string literals is unclear.
+/// Maybe an alternative is to use immutable trees, but at copying cost.
+///
+/// Sub-nodes are Boxes rather than owned values: to prevent over-size nodes.
+/// They are not Rc: not very necessary (since all manipulations will be conducted in a visitor), plus Rc cannot be pattern matched.
+/// They are not simple references: nodes can be created and replaced like `*node = CreateNewNode`.
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BinOp {
@@ -30,6 +35,9 @@ pub enum UnaOp {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BuiltinOp {
     Println,
+    Nth,
+    True,
+    False,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,6 +47,7 @@ pub enum Ty {
     BoolTy,
     UnkTy, // use this variant than Option<Ty>
     AbsTy(Box<Ty>, Box<Ty>),
+    DataTy(String),
 }
 
 #[derive(Debug)]
@@ -50,7 +59,29 @@ pub struct LetRecArm {
     pub body: Box<Expr>,
 }
 
-// OPT: less Strings and Boxes
+#[derive(Debug)]
+pub enum MatchPattern {
+    Binder {
+        name: String,
+    },
+    Tuple {
+        subs: Vec<MatchPattern>,
+    },
+    Lit {
+        val: Expr,
+    },
+    DataType {
+        ctor: String,
+        subs: Vec<MatchPattern>,
+    },
+}
+
+#[derive(Debug)]
+pub struct MatchArm {
+    pub ptn: MatchPattern,
+    pub res: Expr,
+}
+
 #[derive(Debug)]
 pub enum Expr {
     IntLit {
@@ -106,9 +137,26 @@ pub enum Expr {
         arms: Vec<LetRecArm>,
         body: Box<Expr>,
     },
+    Match {
+        sub: Box<Expr>,
+        arms: Vec<MatchArm>,
+    },
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DataTypeArm {
+    pub ctor: String,
+    pub arg_tys: Vec<Ty>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DataType {
+    pub name: String,
+    pub arms: Vec<DataTypeArm>,
 }
 
 #[derive(Debug)]
 pub struct Prog {
+    pub data_types: Vec<DataType>,
     pub main_expr: Expr,
 }

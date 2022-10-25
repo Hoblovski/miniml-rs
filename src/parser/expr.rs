@@ -4,22 +4,27 @@ use crate::ast::*;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    combinator::{map, opt},
-    multi::{many0, separated_list1},
+    combinator::{map, opt, verify},
+    multi::{many0, many1, separated_list1},
     sequence::{delimited, pair, preceded, tuple},
     IResult,
 };
+use phf::phf_map;
 
 use super::{ops::*, types::*};
 
+static BUILTINS: phf::Map<&'static str, BuiltinOp> = phf_map! {
+    "println" => BuiltinOp::Println,
+    "true" => BuiltinOp::True,
+    "false" => BuiltinOp::False,
+    "nth" => BuiltinOp::Nth,
+};
+
 pub fn builtin(i: &str) -> IResult<&str, Expr> {
-    // XXX
-    let (i, op) = ws(alt((tag("println"), tag("println"))))(i)?;
-    let op = match op {
-        "println" => BuiltinOp::Println,
-        _ => unreachable!(),
+    let (i, s) = verify(identlike, |s: &str| BUILTINS.contains_key(s))(i)?;
+    let o = Expr::Builtin {
+        op: BUILTINS.get(s).unwrap().clone(),
     };
-    let o = Expr::Builtin { op };
     Ok((i, o))
 }
 
@@ -45,10 +50,13 @@ pub fn nth(i: &str) -> IResult<&str, Expr> {
     Ok((i, o))
 }
 
+pub fn lit(i: &str) -> IResult<&str, Expr> {
+    alt((unitlit, intlit))(i)
+}
+
 pub fn atom(i: &str) -> IResult<&str, Expr> {
     alt((
-        unitlit,
-        intlit,
+        lit,
         builtin,
         map(ident, |id| Expr::VarRef { id }),
         paren,
@@ -235,6 +243,7 @@ pub fn let2arm(i: &str) -> IResult<&str, LetRecArm> {
     Ok((i, o))
 }
 
+/// An `let-rec`.
 pub fn let2(i: &str) -> IResult<&str, Expr> {
     let (i, _) = wstag("let rec")(i)?;
     let (i, arms) = separated_list1(wstag("and"), let2arm)(i)?;
@@ -245,8 +254,70 @@ pub fn let2(i: &str) -> IResult<&str, Expr> {
     Ok((i, o))
 }
 
+pub fn ptn(i: &str) -> IResult<&str, MatchPattern> {
+    let (i, subs) = separated_list1(wstag(","), ptn1)(i)?;
+    let o = if subs.len() == 1 {
+        subs.into_iter().nth(0).unwrap()
+    } else {
+        MatchPattern::Tuple { subs }
+    };
+    Ok((i, o))
+}
+
+pub fn ptn1(i: &str) -> IResult<&str, MatchPattern> {
+    alt((ptn1_paren, ptn1_lit, ptn1_data, ptn1_binder))(i)
+}
+
+/// Tuple or binder pattern
+pub fn ptn1_data(i: &str) -> IResult<&str, MatchPattern> {
+    let (i, ctor) = ident(i)?;
+    let (i, subs) = many1(ws(ptn1))(i)?;
+    let o = MatchPattern::DataType { ctor, subs };
+    Ok((i, o))
+}
+
+pub fn ptn1_binder(i: &str) -> IResult<&str, MatchPattern> {
+    let (i, name) = ident(i)?;
+    let o = MatchPattern::Binder { name };
+    Ok((i, o))
+}
+
+pub fn ptn1_lit(i: &str) -> IResult<&str, MatchPattern> {
+    let (i, val) = lit(i)?;
+    let o = MatchPattern::Lit { val };
+    Ok((i, o))
+}
+
+pub fn ptn1_paren(i: &str) -> IResult<&str, MatchPattern> {
+    let (i, o) = delimited(wstag("("), ptn, wstag(")"))(i)?;
+    Ok((i, o))
+}
+
+pub fn mat1arm(i: &str) -> IResult<&str, MatchArm> {
+    let (i, _) = wstag("|")(i)?;
+    let (i, ptn) = ws(ptn)(i)?;
+    let (i, _) = wstag("->")(i)?;
+    let (i, res) = ws(expr)(i)?;
+    let o = MatchArm { ptn, res };
+    Ok((i, o))
+}
+
+pub fn mat1(i: &str) -> IResult<&str, Expr> {
+    let (i, _) = wstag("match")(i)?;
+    let (i, sub) = ws(expr)(i)?;
+    let (i, arms) = many1(mat1arm)(i)?;
+    let (i, _) = wstag("end")(i)?;
+    let sub = Box::new(sub);
+    let o = Expr::Match { sub, arms };
+    Ok((i, o))
+}
+
+pub fn mat(i: &str) -> IResult<&str, Expr> {
+    alt((mat1, lam))(i)
+}
+
 pub fn lett(i: &str) -> IResult<&str, Expr> {
-    alt((let1, let2, lam))(i)
+    alt((let1, let2, mat))(i)
 }
 
 pub fn expr(i: &str) -> IResult<&str, Expr> {
