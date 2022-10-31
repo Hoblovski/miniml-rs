@@ -1,3 +1,5 @@
+use phf::phf_map;
+
 /// AST node definitions.
 ///
 /// String literals are String rather than &str.
@@ -159,4 +161,20 @@ pub struct DataType {
 pub struct Prog {
     pub data_types: Vec<DataType>,
     pub main_expr: Expr,
+}
+
+pub static BUILTIN_PARSE: phf::Map<&'static str, BuiltinOp> = phf_map! {
+    "println" => BuiltinOp::Println,
+    "true" => BuiltinOp::True,
+    "false" => BuiltinOp::False,
+    "nth" => BuiltinOp::Nth,
+};
+
+pub fn builtin_print(op: BuiltinOp) -> &'static str {
+    match op {
+        BuiltinOp::Println => "println",
+        BuiltinOp::Nth => "nth",
+        BuiltinOp::True => "true",
+        BuiltinOp::False => "false",
+    }
 }

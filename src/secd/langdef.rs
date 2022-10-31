@@ -3,12 +3,15 @@
 #[derive(Debug, Clone)]
 pub enum SECDVal {
     IntVal(isize),
+    UnitVal,
     TupleVal(Vec<SECDVal>),
     ClosureVal {
+        // Functions are represented with pc.
         focused_fn: Option<usize>,
         mutrec_fns: Vec<usize>,
         env: Vec<SECDVal>, // TODO: optimize this
     },
+    BuiltinVal(BuiltinOp),
     EnvVal(Vec<SECDVal>),
     PCVal(usize),
 }
@@ -24,7 +27,7 @@ pub enum SECDInstr {
     Return,
     Closure(String),
     Closures(Vec<String>),
-    Builtin(String),
+    Builtin(BuiltinOp),
     Binary(BinOp),
     Unary(UnaOp),
     Branch(BrOp, String),
@@ -60,4 +63,9 @@ pub enum UnaOp {
 pub enum BrOp {
     Br,
     BrFalse,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+pub enum BuiltinOp {
+    Println,
 }

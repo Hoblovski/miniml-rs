@@ -30,10 +30,10 @@ pub fn clrscr() {
     println!("\x1b[H\x1b[J")
 }
 
-struct SECDInterp {
+struct SECDInterp<'s> {
     machine: SECDMachine,
     nsteps: usize,
-    lines: Vec<String>,
+    lines: Vec<&'s str>,
     dumps: Vec<String>,
 }
 
@@ -43,14 +43,17 @@ const BEFORE_MAX: usize = 10;
 /// When dumping, these limits the portion of code being printed.
 const AFTER_MAX: usize = 15;
 
-impl SECDInterp {
-    fn new(code: &str) -> Self {
-        let lines: Vec<String> = code
+impl<'s> SECDInterp<'s> {
+    fn new(code: &'s str) -> Self {
+        let lines = code
             .lines()
+            .filter(|line| line.trim().len() != 0 && !line.trim().starts_with("#"))
+            .collect::<Vec<_>>();
+        let lines_parse = lines
+            .iter()
             .map(|x| x.trim().to_string())
-            .filter(|line| line.len() != 0 && !line.starts_with("#"))
-            .collect();
-        let machine = secd_parse(&lines);
+            .collect::<Vec<_>>();
+        let machine = secd_parse(&lines_parse);
         let mut res = Self {
             machine: SECDMachine::init(machine),
             nsteps: 0,

@@ -1,4 +1,5 @@
 #![feature(box_patterns)]
+#![feature(if_let_guard)]
 #![allow(unreachable_patterns)]
 pub mod ast;
 pub mod error;

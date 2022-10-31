@@ -45,34 +45,44 @@ impl SECDMachine {
         match instr {
             SECDInstr::Halt => Err("execution halted".to_string()),
             SECDInstr::Pop(n) => {
+                *pc += 1;
                 *stk = stk[..stk.len() - n].to_vec();
                 Ok(())
             }
             SECDInstr::Apply => {
                 let arg = stk.pop().expect("cannot pop arg");
                 let cl = stk.pop().expect("cannot pop closure");
-                if let SECDVal::ClosureVal {
-                    focused_fn: Some(focused_fn),
-                    mutrec_fns,
-                    env: env1,
-                } = cl
-                {
-                    // TODO: builtin
-                    stk.push(SECDVal::EnvVal(env.clone()));
-                    stk.push(SECDVal::PCVal(*pc + 1));
-                    *pc = focused_fn;
-                    *env = env1.clone();
-                    if mutrec_fns.len() > 0 {
-                        env.push(SECDVal::ClosureVal {
-                            focused_fn: None,
-                            mutrec_fns: mutrec_fns,
-                            env: env1.clone(),
-                        });
+                match cl {
+                    SECDVal::ClosureVal {
+                        focused_fn: Some(focused_fn),
+                        mutrec_fns,
+                        env: env1,
+                    } => {
+                        stk.push(SECDVal::EnvVal(env.clone()));
+                        stk.push(SECDVal::PCVal(*pc + 1));
+                        *pc = focused_fn;
+                        *env = env1.clone();
+                        if mutrec_fns.len() > 0 {
+                            env.push(SECDVal::ClosureVal {
+                                focused_fn: None,
+                                mutrec_fns: mutrec_fns,
+                                env: env1.clone(),
+                            });
+                        }
+                        env.push(arg);
+                        Ok(())
                     }
-                    env.push(arg);
-                    Ok(())
-                } else {
-                    Err(format!("apply to non-ready-closure {cl:?}!"))
+                    SECDVal::BuiltinVal(op) => {
+                        *pc += 1;
+                        match op {
+                            super::langdef::BuiltinOp::Println => {
+                                self.effects.push(SECDEffect::Println(format!("{arg:?}")));
+                                stk.push(SECDVal::UnitVal);
+                                Ok(())
+                            }
+                        }
+                    }
+                    _ => Err(format!("apply to non-ready-closure {cl:?}!")),
                 }
             }
             SECDInstr::Const(val) => {
@@ -134,7 +144,7 @@ impl SECDMachine {
                 *pc += 1;
                 let focused_fn = Some(self.pc_from_label[label]);
                 let cl = SECDVal::ClosureVal {
-                    focused_fn: focused_fn,
+                    focused_fn,
                     mutrec_fns: Vec::new(),
                     env: env.clone(),
                 };
@@ -154,16 +164,9 @@ impl SECDMachine {
             }
             SECDInstr::Builtin(op) => {
                 *pc += 1;
-                // TODO
-                match op.as_str() {
-                    "println" => {
-                        // let v = stk.pop();
-                        // self.effects.push(SECDEffect::Println(format!("{v:?}")));
-                        // Ok(())
-                        todo!()
-                    }
-                    _ => todo!(),
-                }
+                let op = SECDVal::BuiltinVal(*op);
+                stk.push(op);
+                Ok(())
             }
             SECDInstr::Binary(op) => {
                 *pc += 1;

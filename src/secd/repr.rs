@@ -2,7 +2,7 @@
 
 use phf::phf_map;
 
-use super::langdef::{BinOp, BrOp, SECDInstr, SECDVal, UnaOp};
+use super::langdef::{BinOp, BrOp, BuiltinOp, SECDInstr, SECDVal, UnaOp};
 
 static BINOPS_PARSE: phf::Map<&'static str, BinOp> = {
     use BinOp::*;
@@ -33,6 +33,13 @@ static BROPS_PARSE: phf::Map<&'static str, BrOp> = {
     phf_map! {
         "br" => Br,
         "brfl" => BrFalse,
+    }
+};
+
+static BUILTINOPS_PARSE: phf::Map<&'static str, BuiltinOp> = {
+    use BuiltinOp::*;
+    phf_map! {
+        "println" => Println,
     }
 };
 
@@ -68,6 +75,41 @@ fn brops_print(op: BrOp) -> &'static str {
         Br => "br",
         BrFalse => "brfl",
         _ => todo!(),
+    }
+}
+
+fn builtinops_print(op: BuiltinOp) -> &'static str {
+    use BuiltinOp::*;
+    match op {
+        Println => "println",
+    }
+}
+
+pub fn translate_binop(op: crate::ast::BinOp) -> crate::secd::langdef::BinOp {
+    match op {
+        crate::ast::BinOp::Add => crate::secd::langdef::BinOp::Add,
+        crate::ast::BinOp::Sub => crate::secd::langdef::BinOp::Sub,
+        crate::ast::BinOp::Mul => crate::secd::langdef::BinOp::Mul,
+        crate::ast::BinOp::Div => crate::secd::langdef::BinOp::Div,
+        crate::ast::BinOp::Rem => crate::secd::langdef::BinOp::Rem,
+        crate::ast::BinOp::Gt => crate::secd::langdef::BinOp::Gt,
+        crate::ast::BinOp::Lt => crate::secd::langdef::BinOp::Lt,
+        crate::ast::BinOp::Ge => crate::secd::langdef::BinOp::Ge,
+        crate::ast::BinOp::Le => crate::secd::langdef::BinOp::Le,
+        crate::ast::BinOp::Eq => crate::secd::langdef::BinOp::Eq,
+        crate::ast::BinOp::Ne => crate::secd::langdef::BinOp::Ne,
+        crate::ast::BinOp::Land => crate::secd::langdef::BinOp::Land,
+        crate::ast::BinOp::Lor => crate::secd::langdef::BinOp::Lor,
+        crate::ast::BinOp::Lxor => crate::secd::langdef::BinOp::Lxor,
+    }
+}
+
+pub fn translate_builtinop(op: crate::ast::BuiltinOp) -> crate::secd::langdef::BuiltinOp {
+    match op {
+        crate::ast::BuiltinOp::Println => crate::secd::langdef::BuiltinOp::Println,
+        crate::ast::BuiltinOp::Nth => todo!(),
+        crate::ast::BuiltinOp::True => unreachable!(),
+        crate::ast::BuiltinOp::False => unreachable!(),
     }
 }
 
@@ -119,7 +161,7 @@ pub fn secd_parse(lines: &Vec<String>) -> Vec<SECDInstr> {
                 "apply" => Apply,
                 "builtin" => {
                     assert_eq!(args.len(), 1);
-                    Builtin(args[0].to_string())
+                    Builtin(BUILTINOPS_PARSE[args[0]])
                 }
                 "pushenv" => PushEnv,
                 "const" => {
@@ -159,7 +201,7 @@ impl std::fmt::Display for SECDInstr {
             SECDInstr::Return => write!(f, "return"),
             SECDInstr::Closure(fnn) => write!(f, "closure {}", fnn),
             SECDInstr::Closures(fns) => write!(f, "closures {}", fns.join(" ")),
-            SECDInstr::Builtin(op) => write!(f, "builtin {op}"),
+            SECDInstr::Builtin(op) => write!(f, "builtin {}", builtinops_print(*op)),
             SECDInstr::Binary(op) => write!(f, "{}", binops_print(*op)),
             SECDInstr::Unary(op) => write!(f, "{}", unaops_print(*op)),
             SECDInstr::Branch(op, label) => write!(f, "{} {label}", brops_print(*op)),

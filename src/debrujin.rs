@@ -3,15 +3,29 @@
 use std::collections::VecDeque;
 
 use crate::{
-    ast::{Expr, Ty},
+    ast::{Expr, LetRecArm, Ty},
     node_id::NodeInfo,
     visitor::ExprListener,
 };
 
+#[derive(Debug, Clone)]
+pub enum DeBrujinIdx {
+    Var(usize),
+    Rec(usize, usize),
+}
+
+#[derive(Debug)]
+enum VarBundle {
+    Var(String),
+    Rec(Vec<String>),
+}
+
+pub type DeBrujinInfo = NodeInfo<DeBrujinIdx>;
+
 pub struct DeBrujin {
     // TODO: use str
-    vars: VecDeque<String>,
-    info: NodeInfo<usize>,
+    vars: VecDeque<VarBundle>,
+    info: DeBrujinInfo,
 }
 
 impl DeBrujin {
@@ -22,26 +36,47 @@ impl DeBrujin {
         }
     }
 
-    pub fn get_info(&self) -> &NodeInfo<usize> {
-        &self.info
+    pub fn get_info(self) -> DeBrujinInfo {
+        self.info
     }
 
-    fn get_debrujin_idx(&self, varname: &String) -> Option<usize> {
+    fn get_debrujin_idx(&self, id: &String) -> Option<DeBrujinIdx> {
         for (i, v) in self.vars.iter().enumerate() {
-            if v == varname {
-                return Some(i);
+            match v {
+                VarBundle::Var(v) if v == id =>
+                    return Some(DeBrujinIdx::Var(i)),
+                VarBundle::Rec(vs) if let Some(idx) = vs.iter().position(|x| x == id) =>
+                    return Some(DeBrujinIdx::Rec(i, idx)),
+                _ => (),
             }
         }
         None
     }
 
     fn define_var(&mut self, id: &String) {
-        self.vars.push_front(id.clone());
+        self.vars.push_front(VarBundle::Var(id.clone()));
+    }
+
+    fn define_rec(&mut self, rec: &Vec<String>) {
+        self.vars.push_front(VarBundle::Rec(rec.clone()));
     }
 
     fn undefine_var(&mut self, id: &String) {
-        assert!(self.vars.front().unwrap() == id);
-        self.vars.pop_front();
+        if let Some(VarBundle::Var(id_)) = self.vars.pop_front() {
+            if &id_ == id {
+                return;
+            }
+        }
+        unreachable!()
+    }
+
+    fn undefine_rec(&mut self, rec: &Vec<String>) {
+        if let Some(VarBundle::Rec(vs)) = self.vars.pop_front() {
+            if &vs == rec {
+                return;
+            }
+        }
+        unreachable!()
     }
 }
 
@@ -57,5 +92,31 @@ impl ExprListener for DeBrujin {
 
     fn exit_abs(&mut self, arg_name: &String, _arg_ty: &Ty, _body: &Expr, _eself: &Expr) {
         self.undefine_var(arg_name);
+    }
+
+    fn enter_let(&mut self, name: &String, _ty: &Ty, _val: &Expr, _body: &Expr, _eself: &Expr) {
+        self.define_var(name);
+    }
+
+    fn exit_let(&mut self, name: &String, _ty: &Ty, _val: &Expr, _body: &Expr, _eself: &Expr) {
+        self.undefine_var(name);
+    }
+
+    fn enter_letrec(&mut self, arms: &Vec<crate::ast::LetRecArm>, _body: &Expr, _eself: &Expr) {
+        let rec = arms.iter().map(|x| x.fn_name.clone()).collect::<Vec<_>>();
+        self.define_rec(&rec);
+    }
+
+    fn exit_letrec(&mut self, arms: &Vec<crate::ast::LetRecArm>, _body: &Expr, _eself: &Expr) {
+        let rec = arms.iter().map(|x| x.fn_name.clone()).collect::<Vec<_>>();
+        self.undefine_rec(&rec);
+    }
+
+    fn enter_letrecarm(&mut self, arm: &LetRecArm) {
+        self.define_var(&arm.arg_name);
+    }
+
+    fn exit_letrecarm(&mut self, arm: &LetRecArm) {
+        self.undefine_var(&arm.arg_name);
     }
 }

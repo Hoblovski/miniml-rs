@@ -1,4 +1,4 @@
-/// Provides basic visitors.
+/// Provides basic visitors, listeners.
 use crate::ast::*;
 
 /// The visitor itself is mut so we are able to store bookkeeping info.
@@ -70,6 +70,14 @@ pub trait ExprVisitorMut<R> {
         self.visit_children(e)
     }
 
+    fn visit_letrecarm(&mut self, e: &mut LetRecArm) -> R {
+        self.visit(&mut e.body)
+    }
+
+    fn visit_matcharm(&mut self, e: &mut MatchArm) -> R {
+        self.visit(&mut e.res)
+    }
+
     fn visit_children(&mut self, e: &mut Expr) -> R {
         use Expr::*;
         match e {
@@ -127,9 +135,14 @@ pub trait ExprVisitorMut<R> {
                 self.join_results(chs)
             }
             LetRec { arms, box body } => {
-                let mut chs1: Vec<R> = arms.iter_mut().map(|x| self.visit(&mut x.body)).collect();
-                chs1.push(self.visit(body));
-                self.join_results(chs1)
+                let mut chs: Vec<R> = arms.iter_mut().map(|x| self.visit_letrecarm(x)).collect();
+                chs.push(self.visit(body));
+                self.join_results(chs)
+            }
+            Match { sub, arms } => {
+                let mut chs = vec![self.visit(sub)];
+                chs.extend(arms.iter_mut().map(|x| self.visit_matcharm(x)));
+                self.join_results(chs)
             }
             _ => self.default(),
         }
@@ -153,7 +166,7 @@ pub trait ExprVisitorMut<R> {
             Nth { .. } => self.visit_nth(e),
             Ite { .. } => self.visit_ite(e),
             LetRec { .. } => self.visit_letrec(e),
-            _ => self.default(),
+            _ => todo!(),
         }
     }
 
@@ -205,6 +218,12 @@ pub trait ExprListener {
 
     fn enter_match(&mut self, sub: &Expr, arms: &Vec<MatchArm>, eself: &Expr) {}
     fn exit_match(&mut self, sub: &Expr, arms: &Vec<MatchArm>, eself: &Expr) {}
+
+    fn enter_letrecarm(&mut self, arm: &LetRecArm) {}
+    fn exit_letrecarm(&mut self, arm: &LetRecArm) {}
+
+    fn enter_matcharm(&mut self, arm: &MatchArm) {}
+    fn exit_matcharm(&mut self, arm: &MatchArm) {}
 
     fn default_walk(&mut self, e: &Expr) {
         use Expr::*;
@@ -274,15 +293,10 @@ pub trait ExprListener {
             }
             LetRec { arms, body } => {
                 self.enter_letrec(arms, body, e);
-                for LetRecArm {
-                    fn_name: _,
-                    fn_ty: _,
-                    arg_name: _,
-                    arg_ty: _,
-                    body,
-                } in arms.iter()
-                {
-                    self.walk(body);
+                for arm in arms.iter() {
+                    self.enter_letrecarm(arm);
+                    self.walk(&arm.body);
+                    self.exit_letrecarm(arm);
                 }
                 self.walk(body);
                 self.exit_letrec(arms, body, e);
@@ -290,8 +304,10 @@ pub trait ExprListener {
             Match { sub, arms } => {
                 self.enter_match(sub, arms, e);
                 self.walk(sub);
-                for MatchArm { ptn: _, res } in arms.iter() {
-                    self.walk(res);
+                for arm in arms.iter() {
+                    self.enter_matcharm(arm);
+                    self.walk(&arm.res);
+                    self.exit_matcharm(arm);
                 }
                 self.exit_match(sub, arms, e);
             }
@@ -303,93 +319,185 @@ pub trait ExprListener {
     }
 }
 
-// pub trait ExprVisitorImmut<R> {
-//     /// Does auto un-packing.
+#[allow(unused_variables)]
+/// Does auto un-packing.
+pub trait ExprVisitorImmut<R> {
+    fn default(&mut self) -> R;
 
-//     fn default(&mut self) -> R;
+    fn join_results(&mut self, res: Vec<R>) -> R {
+        self.default()
+    }
 
-//     fn join_results(&mut self, res: Vec<R>) -> R {
-//         self.default()
-//     }
+    fn visit_intlit(&mut self, val: &i64, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_intlit(&mut self, val: i64) -> R {
-//         self.default()
-//     }
+    fn visit_unitlit(&mut self, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_unitlit(&mut self) -> R {
-//         self.default()
-//     }
+    fn visit_binary(&mut self, lhs: &Expr, op: &BinOp, rhs: &Expr, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_binary(&mut self, lhs: &Expr, op: BinOp, rhs: &Expr) -> R {
-//         self.default()
-//     }
+    fn visit_unary(&mut self, op: &UnaOp, sub: &Expr, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_unary(&mut self, op: UnaOp, sub: &Expr) -> R {
-//         self.default()
-//     }
+    fn visit_varref(&mut self, id: &String, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_varref(&mut self, id: String) -> R {
-//         self.default()
-//     }
+    fn visit_builtin(&mut self, op: &BuiltinOp, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_builtin(&mut self, op: BuiltinOp) -> R {
-//         self.default()
-//     }
+    fn visit_app(&mut self, fun: &Expr, arg: &Expr, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_app(&mut self, fun: &Expr, arg: &Expr) -> R {
-//         self.default()
-//     }
+    fn visit_seq(&mut self, subs: &Vec<Box<Expr>>, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_seq(&mut self, subs: Vec<&Expr>) -> R {
-//         self.default()
-//     }
+    fn visit_abs(&mut self, arg_name: &String, arg_ty: &Ty, body: &Expr, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_abs(&mut self, arg_name: String, arg_ty: Ty, body: &Expr) -> R {
-//         self.default()
-//     }
+    fn visit_let(&mut self, name: &String, ty: &Ty, val: &Expr, body: &Expr, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_let(&mut self, name: String, ty: Ty, val: &Expr, body: &Expr) -> R {
-//         self.default()
-//     }
+    fn visit_tuple(&mut self, subs: &Vec<Box<Expr>>, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_tuple(&mut self, subs: Vec<&Expr>) -> R {
-//         self.default()
-//     }
+    fn visit_nth(&mut self, idx: &i64, sub: &Expr, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_nth(&mut self, idx: i64, sub: &Expr) -> R {
-//         self.default()
-//     }
+    fn visit_ite(&mut self, cond: &Expr, tr: &Expr, fl: &Expr, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_ite(&mut self, cond: &Expr, tr: &Expr, fl: &Expr) -> R {
-//         self.default()
-//     }
+    fn visit_letrec(&mut self, arms: &Vec<LetRecArm>, body: &Expr, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_letrec(&mut self, arms: Vec<LetRecArm>, body: &Expr) -> R {
-//         self.default()
-//     }
+    fn visit_match(&mut self, sub: &Expr, arms: &Vec<MatchArm>, eself: &Expr) -> R {
+        self.visit_children(eself)
+    }
 
-//     fn visit_match(&mut self, sub: &Expr, arms: Vec<MatchArm>) -> R {
-//         self.default()
-//     }
+    fn visit_letrecarm(&mut self, e: &LetRecArm) -> R {
+        self.visit(&e.body)
+    }
 
-//     fn visit(&mut self, e: &Expr) -> R {
-//         use Expr::*;
-//         match e {
-//             IntLit { val } => self.visit_intlit(*val),
-//             UnitLit { } => self.visit_unitlit(),
-//             Binary { lhs, op, rhs } => self.visit_binary(lhs, *op, rhs),
-//             Unary { op, sub } => self.visit_unary(*op, sub),
-//             VarRef { id }  => self.visit_varref(*id),
-//             Builtin { op } => self.visit_builtin(*op),
-//             App { fun, arg } => self.visit_app(fun, arg),
-//             Seq { subs } => self.visit_seq(subs.iter().collect()),
-//             Abs { arg_name, arg_ty, body } => self.visit_abs(arg_name, arg_ty, body),
-//             Let { name, ty, val, body } => self.visit_let(name, ty, val, body),
-//             Tuple { subs } => self.visit_tuple(e),
-//             Nth { idx, sub } => self.visit_nth(e),
-//             Ite { cond, tr, fl } => self.visit_ite(e),
-//             LetRec { arms, body } => self.visit_letrec(e),
-//             _ => self.default(),
-//         }
-//     }
-// }
+    fn visit_matcharm(&mut self, e: &MatchArm) -> R {
+        self.visit(&e.res)
+    }
+
+    fn visit_children(&mut self, e: &Expr) -> R {
+        use Expr::*;
+        match e {
+            Binary {
+                box lhs,
+                op: _,
+                box rhs,
+            } => {
+                let chs = vec![self.visit(lhs), self.visit(rhs)];
+                self.join_results(chs)
+            }
+            Unary { op: _, box sub } => {
+                let chs = vec![self.visit(sub)];
+                self.join_results(chs)
+            }
+            App { box fun, box arg } => {
+                let chs = vec![self.visit(fun), self.visit(arg)];
+                self.join_results(chs)
+            }
+            Seq { subs } => {
+                let chs = subs.iter().map(|x| self.visit(x)).collect();
+                self.join_results(chs)
+            }
+            Abs {
+                arg_name: _,
+                arg_ty: _,
+                box body,
+            } => {
+                let chs = vec![self.visit(body)];
+                self.join_results(chs)
+            }
+            Let {
+                name: _,
+                ty: _,
+                val,
+                body,
+            } => {
+                let chs = vec![self.visit(val), self.visit(body)];
+                self.join_results(chs)
+            }
+            Tuple { subs } => {
+                let chs = subs.iter().map(|x| self.visit(x)).collect();
+                self.join_results(chs)
+            }
+            Nth { idx: _, box sub } => {
+                let chs = vec![self.visit(sub)];
+                self.join_results(chs)
+            }
+            Ite {
+                box cond,
+                box tr,
+                box fl,
+            } => {
+                let chs = vec![self.visit(cond), self.visit(tr), self.visit(fl)];
+                self.join_results(chs)
+            }
+            LetRec { arms, box body } => {
+                let mut chs: Vec<R> = arms.iter().map(|x| self.visit_letrecarm(x)).collect();
+                chs.push(self.visit(body));
+                self.join_results(chs)
+            }
+            Match { sub, arms } => {
+                let mut chs = vec![self.visit(sub)];
+                chs.extend(arms.iter().map(|x| self.visit_matcharm(x)));
+                self.join_results(chs)
+            }
+            _ => todo!(),
+        }
+    }
+
+    /// Impl can call default_visit even if it overrides visit.
+    fn default_visit(&mut self, e: &Expr) -> R {
+        use Expr::*;
+        match e {
+            IntLit { val } => self.visit_intlit(val, e),
+            UnitLit {} => self.visit_unitlit(e),
+            Binary { lhs, op, rhs } => self.visit_binary(lhs, op, rhs, e),
+            Unary { op, sub } => self.visit_unary(op, sub, e),
+            VarRef { id } => self.visit_varref(id, e),
+            Builtin { op } => self.visit_builtin(op, e),
+            App { fun, arg } => self.visit_app(fun, arg, e),
+            Seq { subs } => self.visit_seq(subs, e),
+            Abs {
+                arg_name,
+                arg_ty,
+                body,
+            } => self.visit_abs(arg_name, arg_ty, body, e),
+            Let {
+                name,
+                ty,
+                val,
+                body,
+            } => self.visit_let(name, ty, val, body, e),
+            Tuple { subs } => self.visit_tuple(subs, e),
+            Nth { idx, sub } => self.visit_nth(idx, sub, e),
+            Ite { cond, tr, fl } => self.visit_ite(cond, tr, fl, e),
+            LetRec { arms, body } => self.visit_letrec(arms, body, e),
+            _ => todo!(),
+        }
+    }
+
+    fn visit(&mut self, e: &Expr) -> R {
+        self.default_visit(e)
+    }
+}

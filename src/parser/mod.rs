@@ -12,7 +12,5 @@ mod types;
 pub fn parse(buf: &str) -> Result<Prog, MiniMLErr> {
     let parse_res = terminated(ws(top), eof)(buf);
     let prog = parse_res.expect("parsing failed").1;
-    println!("Prog is {:#?}", prog);
-    println!("===============================");
     Ok(prog)
 }

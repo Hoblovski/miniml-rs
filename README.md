@@ -4,8 +4,9 @@ Originally [MiniML](https://github.com/Hoblovski/MiniML) was in Python.
 
 # TODO
 * parse comments
-* typer, codegen
+* typer, (complete) codegen
 * translate CFG to PEG (now the PEG is unchecked rewrite of CFG)
+* use more &str than String
 
 # Run
 ```

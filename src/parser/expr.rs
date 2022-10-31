@@ -9,21 +9,13 @@ use nom::{
     sequence::{delimited, pair, preceded, tuple},
     IResult,
 };
-use phf::phf_map;
 
 use super::{ops::*, types::*};
 
-static BUILTINS: phf::Map<&'static str, BuiltinOp> = phf_map! {
-    "println" => BuiltinOp::Println,
-    "true" => BuiltinOp::True,
-    "false" => BuiltinOp::False,
-    "nth" => BuiltinOp::Nth,
-};
-
 pub fn builtin(i: &str) -> IResult<&str, Expr> {
-    let (i, s) = verify(identlike, |s: &str| BUILTINS.contains_key(s))(i)?;
+    let (i, s) = verify(identlike, |s: &str| BUILTIN_PARSE.contains_key(s))(i)?;
     let o = Expr::Builtin {
-        op: BUILTINS.get(s).unwrap().clone(),
+        op: BUILTIN_PARSE.get(s).unwrap().clone(),
     };
     Ok((i, o))
 }
