@@ -9,6 +9,7 @@ use std::vec::Vec;
 
 /// Visits the AST and renames the variables into unique names.
 /// Basically does an alpha conversion pass.
+/// Alternative: implement as listener (for better error diagnostics).
 pub struct Namer {
     name_cnt: HashMap<String, i64>,
     vars: Vec<(String, String)>,
@@ -35,14 +36,14 @@ impl Namer {
         return format!("{}{}@{}", "_", name, suffix);
     }
 
-    fn def_var(&mut self, old: &str) -> String {
+    fn define_var(&mut self, old: &str) -> String {
         let new = self.gen_name(old);
         self.vars.push((old.to_string(), new.clone()));
         // OPT: redundant to_string as already in gen_name
         return new;
     }
 
-    fn undef_var(&mut self, new: &String) {
+    fn undefine_var(&mut self, new: &String) {
         let (_old, new_) = self.vars.pop().unwrap();
         if &new_ != new {
             panic!("undef var unmatch: {} != {}", new, new_);
@@ -80,10 +81,10 @@ impl ExprVisitorMut<NamerResult> for Namer {
             box body,
         } = e
         {
-            let new = self.def_var(arg_name);
+            let new = self.define_var(arg_name);
             *arg_name = new;
             self.visit(body)?;
-            self.undef_var(arg_name);
+            self.undefine_var(arg_name);
             Ok(())
         } else {
             unreachable!()
@@ -98,10 +99,10 @@ impl ExprVisitorMut<NamerResult> for Namer {
             box body,
         } = e
         {
-            *name = self.def_var(name);
+            *name = self.define_var(name);
             self.visit(val)?;
             self.visit(body)?;
-            self.undef_var(name);
+            self.undefine_var(name);
             Ok(())
         } else {
             unreachable!()
@@ -115,19 +116,19 @@ impl ExprVisitorMut<NamerResult> for Namer {
             }
 
             for arm in arms.iter_mut() {
-                arm.fn_name = self.def_var(&arm.fn_name);
+                arm.fn_name = self.define_var(&arm.fn_name);
             }
 
             for arm in arms.iter_mut() {
-                arm.arg_name = self.def_var(&arm.arg_name);
+                arm.arg_name = self.define_var(&arm.arg_name);
                 self.visit(&mut arm.body)?;
-                self.undef_var(&arm.arg_name);
+                self.undefine_var(&arm.arg_name);
             }
 
             self.visit(body)?;
 
             for arm in arms.iter_mut() {
-                self.undef_var(&arm.fn_name);
+                self.undefine_var(&arm.fn_name);
             }
             Ok(())
         } else {
