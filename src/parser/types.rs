@@ -1,8 +1,14 @@
 //! Parsing of types
-use super::ops::*;
+use super::{ops::*, top::is_data_type_name};
 use crate::ast::*;
 
-use nom::{branch::alt, combinator::map_opt, multi::separated_list1, sequence::delimited, IResult};
+use nom::{
+    branch::alt,
+    combinator::{fail, map_opt},
+    multi::separated_list1,
+    sequence::delimited,
+    IResult,
+};
 
 pub fn ty_base(i: &str) -> IResult<&str, Ty> {
     map_opt(identlike, |s: &str| match s {
@@ -19,6 +25,9 @@ pub fn ty_paren(i: &str) -> IResult<&str, Ty> {
 
 pub fn ty_data_type(i: &str) -> IResult<&str, Ty> {
     let (i, name) = ident(i)?;
+    if !is_data_type_name(&name) {
+        fail::<&str, Ty, nom::error::Error<&str>>(i)?;
+    }
     let o = Ty::DataTy(name);
     Ok((i, o))
 }
