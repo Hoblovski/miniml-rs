@@ -18,32 +18,32 @@ $ ./target/debug/secdi t.secd				# rust interpreter
 ```
 
 # TESTCASES
-| testcase                       | status          |
-| ---                            | ---             |
-| gcd.ml                         | failed          |
-| tuple.ml                       | RSMINIML failed |
-| tup_list.ml                    | MINIML failed   |
-| evenodd.ml                     | ok              |
-| fact.ml                        | ok              |
-| typer.ml                       | failed          |
-| curry.ml                       | failed          |
-| higherorder_badtype.ml         | RSMINIML failed |
-| let_rec_variad_poly.ml         | RSMINIML failed |
-| adt_qsort.ml                   | RSMINIML failed |
-| match.ml                       | RSMINIML failed |
-| let_poly_constr.ml             | MINIML failed   |
-| adt_qsort_badtype.ml           | MINIML failed   |
-| closure.ml                     | failed          |
-| let_rec_poly_constrfv.ml       | RSMINIML failed |
-| let_rec_variad_poly_badtype.ml | MINIML failed   |
-| namer.ml                       | ok              |
-| let_poly.ml                    | RSMINIML failed |
-| summod.ml                      | failed          |
-| adt_list_rand.ml               | MINIML failed   |
-| patmat_tup.ml                  | MINIML failed   |
-| relu.ml                        | MINIML failed   |
-| higherorder.ml                 | RSMINIML failed |
-| adt_triv.ml                    | RSMINIML failed |
-| helloworld.ml                  | ok              |
-| let_rec_poly.ml                | RSMINIML failed |
-| typerbad.ml                    | MINIML failed   |
+```
+adt_list_rand.ml                                  MINIML failed
+adt_qsort_badtype.ml                              MINIML failed
+adt_qsort.ml                                      RSMINIML failed
+adt_triv.ml                                       RSMINIML failed
+closure.ml                                        exec result differ
+curry.ml                                          exec result differ
+evenodd.ml                                        ok
+fact.ml                                           ok
+gcd.ml                                            ok
+helloworld.ml                                     ok
+higherorder_badtype.ml                            RSMINIML failed
+higherorder.ml                                    RSMINIML failed
+let_poly_constr.ml                                MINIML failed
+let_poly.ml                                       RSMINIML failed
+let_rec_poly_constrfv.ml                          RSMINIML failed
+let_rec_poly.ml                                   RSMINIML failed
+let_rec_variad_poly_badtype.ml                    MINIML failed
+let_rec_variad_poly.ml                            RSMINIML failed
+match.ml                                          RSMINIML failed
+namer.ml                                          ok
+patmat_tup.ml                                     MINIML failed
+relu.ml                                           MINIML failed
+summod.ml                                         exec result differ
+tuple.ml                                          RSMINIML failed
+tup_list.ml                                       MINIML failed
+typerbad.ml                                       MINIML failed
+typer.ml                                          exec result differ
+```

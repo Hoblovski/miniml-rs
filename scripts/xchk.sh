@@ -27,7 +27,7 @@ fi
 
 do_case() {
 	local tc=$1
-	echo $tc
+	printf "%-50s" $tc
 	if ! ( $MINIML testcases/$tc > outs/$tc.1.secd 2>&1 ); then
 		echo "MINIML failed"
 		return
