@@ -7,6 +7,7 @@ Originally [MiniML](https://github.com/Hoblovski/MiniML) was in Python.
 * typer, (complete) codegen
 * translate CFG to PEG (now the PEG is unchecked rewrite of CFG)
 * use more &str than String
+* xchk for negative input
 
 # Run
 ```
@@ -29,8 +30,8 @@ evenodd.ml                                        ok
 fact.ml                                           ok
 gcd.ml                                            ok
 helloworld.ml                                     ok
-higherorder_badtype.ml                            RSMINIML failed
-higherorder.ml                                    RSMINIML failed
+higherorder_badtype.ml                            ok
+higherorder.ml                                    ok
 let_poly_constr.ml                                MINIML failed
 let_poly.ml                                       RSMINIML failed
 let_rec_poly_constrfv.ml                          RSMINIML failed
@@ -50,3 +51,4 @@ typer.ml                                          ok
 
 spurious ok:
 * typer
+* anything containing bad

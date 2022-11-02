@@ -5,9 +5,9 @@ use crate::ast::*;
 
 use nom::{
     branch::alt,
-    bytes::complete::tag,
+    bytes::complete::{is_not, tag},
     character::complete::*,
-    combinator::{map, map_res, recognize, verify},
+    combinator::{map, map_res, opt, recognize, value, verify},
     error::ParseError,
     multi::many0,
     sequence::{delimited, pair},
@@ -103,6 +103,19 @@ pub fn rel_op(i: &str) -> IResult<&str, BinOp> {
     )(i)
 }
 
+pub fn eol_comment<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, (), E> {
+    value(
+        (), // Output is thrown away.
+        pair(tag("--"), is_not("\n\r")),
+    )(i)
+}
+
+pub fn ignored<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, (), E> {
+    let (i, _) = opt(eol_comment)(i)?;
+    let (i, _) = multispace0(i)?;
+    Ok((i, ()))
+}
+
 // From recipe
 pub fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(
     inner: F,
@@ -110,11 +123,11 @@ pub fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(
 where
     F: FnMut(&'a str) -> IResult<&'a str, O, E>,
 {
-    delimited(multispace0, inner, multispace0)
+    delimited(ignored, inner, ignored)
 }
 
 pub fn wstag<'a, E: ParseError<&'a str>>(
     s: &'a str,
 ) -> impl FnMut(&'a str) -> IResult<&'a str, &'a str, E> {
-    delimited(multispace0, tag(s), multispace0)
+    delimited(ignored, tag(s), ignored)
 }
