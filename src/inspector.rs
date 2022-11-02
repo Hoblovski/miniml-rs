@@ -2,7 +2,7 @@
 
 use std::fmt::Debug;
 
-use crate::{node_id::NodeInfo, visitor::ExprListener};
+use crate::{node_id::NodeInfo, pass::ExprListener};
 
 pub struct Inspector<'a, T: Debug> {
     info: &'a NodeInfo<T>,

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     ast::{Expr, Ty},
     debrujin::{DeBrujinIdx, DeBrujinInfo},
-    visitor::ExprVisitorImmut,
+    pass::ExprVisitor,
 };
 
 use super::{
@@ -52,7 +52,7 @@ impl SECDGen {
     }
 }
 
-impl ExprVisitorImmut<Vec<SECDInstr>> for SECDGen {
+impl ExprVisitor<Vec<SECDInstr>> for SECDGen {
     fn default(&mut self) -> Vec<SECDInstr> {
         todo!()
     }

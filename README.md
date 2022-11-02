@@ -23,8 +23,8 @@ adt_list_rand.ml                                  MINIML failed
 adt_qsort_badtype.ml                              MINIML failed
 adt_qsort.ml                                      RSMINIML failed
 adt_triv.ml                                       RSMINIML failed
-closure.ml                                        exec result differ
-curry.ml                                          exec result differ
+closure.ml                                        ok
+curry.ml                                          ok
 evenodd.ml                                        ok
 fact.ml                                           ok
 gcd.ml                                            ok
@@ -45,5 +45,8 @@ summod.ml                                         exec result differ
 tuple.ml                                          RSMINIML failed
 tup_list.ml                                       MINIML failed
 typerbad.ml                                       MINIML failed
-typer.ml                                          exec result differ
+typer.ml                                          ok
 ```
+
+spurious ok:
+* typer

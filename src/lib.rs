@@ -7,8 +7,8 @@ pub mod inspector;
 pub mod namer;
 pub mod node_id;
 pub mod parser;
+pub mod pass;
 mod utils;
-pub mod visitor;
 
 pub mod debrujin;
 pub mod secd;

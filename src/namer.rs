@@ -1,7 +1,7 @@
 use crate::ast::*;
+use crate::pass::ExprTransformer;
 /// The namer pass.
 use crate::utils::*;
-use crate::visitor::ExprVisitorMut;
 
 use std::collections::HashMap;
 use std::result::Result;
@@ -51,7 +51,7 @@ impl Namer {
     }
 }
 
-impl ExprVisitorMut<NamerResult> for Namer {
+impl ExprTransformer<NamerResult> for Namer {
     fn default(&mut self) -> NamerResult {
         Ok(())
     }

@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use crate::{
     ast::{Expr, LetRecArm, Ty},
     node_id::NodeInfo,
-    visitor::ExprListener,
+    pass::ExprListener,
 };
 
 #[derive(Debug, Clone)]
@@ -94,11 +94,17 @@ impl ExprListener for DeBrujin {
         self.undefine_var(arg_name);
     }
 
-    fn enter_let(&mut self, name: &String, _ty: &Ty, _val: &Expr, _body: &Expr, _eself: &Expr) {
+    fn walk_let(
+        &mut self,
+        name: &String,
+        _ty: &Ty,
+        val: &Box<Expr>,
+        body: &Box<Expr>,
+        _eself: &Expr,
+    ) {
+        self.walk(val);
         self.define_var(name);
-    }
-
-    fn exit_let(&mut self, name: &String, _ty: &Ty, _val: &Expr, _body: &Expr, _eself: &Expr) {
+        self.walk(body);
         self.undefine_var(name);
     }
 

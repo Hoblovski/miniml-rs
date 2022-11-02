@@ -6,7 +6,7 @@ use std::{
 
 extern crate tut;
 
-use tut::{debrujin::DeBrujin, parser::parse, secd::secdgen::secdgen, visitor::ExprListener};
+use tut::{debrujin::DeBrujin, parser::parse, pass::ExprListener, secd::secdgen::secdgen};
 
 #[derive(Debug, Clone, clap::ValueEnum)]
 enum Stage {
