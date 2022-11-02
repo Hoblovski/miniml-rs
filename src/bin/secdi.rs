@@ -1,4 +1,5 @@
 use clap::Parser;
+use tut::secd::langdef::SECDVal;
 use tut::secd::repr::secd_parse;
 
 use std::cmp::{max, min};
@@ -21,6 +22,9 @@ struct Cli {
 
     #[arg(short, long)]
     interactive: bool,
+
+    #[arg(short, long)]
+    brief: bool,
 
     #[arg(short, long)]
     maxstep: Option<usize>,
@@ -98,6 +102,24 @@ impl<'s> SECDInterp<'s> {
         s
     }
 
+    fn dump_brief(&self) -> String {
+        let mut res = String::new();
+        for v in &self.machine.effects {
+            match v {
+                tut::secd::machine::SECDEffect::Println(s) => writeln!(res, "{s}").unwrap(),
+            }
+        }
+        let SECDState(_pc, stk, _env) = &self.machine.state;
+        assert!(stk.len() == 1);
+        match stk.get(0).unwrap() {
+            SECDVal::UnitVal => writeln!(res, "()"),
+            SECDVal::IntVal(v) => writeln!(res, "{v}"),
+            _ => unreachable!(),
+        }
+        .unwrap();
+        res
+    }
+
     fn step(&mut self) -> SECDStepResult {
         self.nsteps += 1;
         let res = self.machine.step();
@@ -166,7 +188,11 @@ fn main() {
                 break res;
             }
         };
-        println!("Execution result: {}\n", res);
-        println!("--- terminal state:\n{}", interp.dumps[interp.nsteps - 1]);
+        if cli.brief {
+            println!("{}", interp.dump_brief());
+        } else {
+            println!("Execution result: {}\n", res);
+            println!("--- terminal state:\n{}", interp.dumps[interp.nsteps - 1]);
+        }
     }
 }

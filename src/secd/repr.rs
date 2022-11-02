@@ -43,7 +43,7 @@ static BUILTINOPS_PARSE: phf::Map<&'static str, BuiltinOp> = {
     }
 };
 
-fn binops_print(op: BinOp) -> &'static str {
+pub fn binops_print(op: BinOp) -> &'static str {
     use BinOp::*;
     match op {
         Add => "add",
@@ -61,7 +61,7 @@ fn binops_print(op: BinOp) -> &'static str {
     }
 }
 
-fn unaops_print(op: UnaOp) -> &'static str {
+pub fn unaops_print(op: UnaOp) -> &'static str {
     use UnaOp::*;
     match op {
         Neg => "neg",
@@ -69,7 +69,7 @@ fn unaops_print(op: UnaOp) -> &'static str {
     }
 }
 
-fn brops_print(op: BrOp) -> &'static str {
+pub fn brops_print(op: BrOp) -> &'static str {
     use BrOp::*;
     match op {
         Br => "br",
@@ -78,7 +78,7 @@ fn brops_print(op: BrOp) -> &'static str {
     }
 }
 
-fn builtinops_print(op: BuiltinOp) -> &'static str {
+pub fn builtinops_print(op: BuiltinOp) -> &'static str {
     use BuiltinOp::*;
     match op {
         Println => "println",
@@ -207,6 +207,24 @@ impl std::fmt::Display for SECDInstr {
             SECDInstr::Branch(op, label) => write!(f, "{} {label}", brops_print(*op)),
             SECDInstr::Label(label) => write!(f, "{label}:"),
             SECDInstr::PushEnv => write!(f, "pushenv"),
+        }
+    }
+}
+
+impl std::fmt::Display for SECDVal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SECDVal::IntVal(v) => write!(f, "{v}"),
+            SECDVal::UnitVal => write!(f, "()"),
+            SECDVal::TupleVal(vs) => {
+                write!(f, "(")?;
+                for x in vs {
+                    x.fmt(f)?;
+                }
+                write!(f, ")")
+            }
+            SECDVal::BuiltinVal(op) => write!(f, "{}", builtinops_print(*op)),
+            _ => write!(f, "{:?}", self),
         }
     }
 }

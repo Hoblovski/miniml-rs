@@ -76,7 +76,7 @@ impl SECDMachine {
                         *pc += 1;
                         match op {
                             super::langdef::BuiltinOp::Println => {
-                                self.effects.push(SECDEffect::Println(format!("{arg:?}")));
+                                self.effects.push(SECDEffect::Println(format!("{arg}")));
                                 stk.push(SECDVal::UnitVal);
                                 Ok(())
                             }
