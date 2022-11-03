@@ -1,18 +1,19 @@
+//! The namer pass.
+//! TODO: should the namer modify the ast directly or should it create some hashmap?
+
 use crate::ast::*;
 use crate::pass::ExprTransformer;
-/// The namer pass.
 use crate::utils::*;
 
 use std::collections::HashMap;
 use std::result::Result;
 use std::vec::Vec;
 
-/// Visits the AST and renames the variables into unique names.
-/// Basically does an alpha conversion pass.
-/// Alternative: implement as listener (for better error diagnostics).
+/// An alpha conversion pass: rename variables into unique names.
+/// Variable `name` gets renamed into `_name@12` where 12 is a numerical suffix.
 pub struct Namer {
-    name_cnt: HashMap<String, i64>,
-    vars: Vec<(String, String)>,
+    name_suffix: HashMap<String, usize>,
+    old_new_varname: Vec<(String, String)>,
 }
 
 #[derive(Debug)]
@@ -25,26 +26,28 @@ type NamerResult = Result<(), NamerErrKind>;
 
 impl Namer {
     pub fn new() -> Self {
-        let name_cnt = HashMap::new();
-        let vars = Vec::new();
-        Namer { name_cnt, vars }
+        let name_suffix = HashMap::new();
+        let old_new_varname = Vec::new();
+        Namer {
+            name_suffix,
+            old_new_varname,
+        }
     }
 
     fn gen_name(&mut self, name: &str) -> String {
-        let suffix = *self.name_cnt.get(name).unwrap_or(&0);
-        self.name_cnt.insert(name.to_string(), suffix + 1);
+        let suffix = *self.name_suffix.get(name).unwrap_or(&0);
+        self.name_suffix.insert(name.to_string(), suffix + 1);
         return format!("{}{}@{}", "_", name, suffix);
     }
 
     fn define_var(&mut self, old: &str) -> String {
         let new = self.gen_name(old);
-        self.vars.push((old.to_string(), new.clone()));
-        // OPT: redundant to_string as already in gen_name
+        self.old_new_varname.push((old.to_string(), new.clone()));
         return new;
     }
 
     fn undefine_var(&mut self, new: &String) {
-        let (_old, new_) = self.vars.pop().unwrap();
+        let (_old, new_) = self.old_new_varname.pop().unwrap();
         if &new_ != new {
             panic!("undef var unmatch: {} != {}", new, new_);
         }
@@ -62,7 +65,7 @@ impl ExprTransformer<NamerResult> for Namer {
 
     fn visit_varref(&mut self, e: &mut Expr) -> NamerResult {
         if let Expr::VarRef { id } = e {
-            for (old, new) in self.vars.iter().rev() {
+            for (old, new) in self.old_new_varname.iter().rev() {
                 if old == id {
                     *id = new.clone();
                     return Ok(());

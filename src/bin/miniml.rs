@@ -1,12 +1,19 @@
 use clap::Parser;
 use std::{
-    fs::{self},
+    fs::{self, File},
+    io::{stdout, Write},
     path::PathBuf,
 };
 
 extern crate tut;
 
-use tut::{debrujin::DeBrujin, parser::parse, pass::ExprListener, secd::secdgen::secdgen};
+use tut::{
+    debrujin::DeBrujin,
+    namer::Namer,
+    parser::parse,
+    pass::{ExprListener, ExprTransformer},
+    secd::secdgen::secdgen,
+};
 
 #[derive(Debug, Clone, clap::ValueEnum)]
 enum Stage {
@@ -36,13 +43,19 @@ fn main() {
         println!("{:#?}", prog);
     }
 
-    // let mut namer = Namer::new();
-    // namer.visit(&mut prog.main_expr).unwrap();
+    let mut os: Box<dyn Write> = match cli.outfile {
+        Some(outfile) => Box::new(File::create(outfile).unwrap()),
+        None => Box::new(stdout()),
+    };
+
+    let mut namer = Namer::new();
+    namer.visit(&mut prog.main_expr).unwrap();
+
     let mut db = DeBrujin::new();
     db.walk(&mut prog.main_expr);
     let debrujin_info = db.get_info();
     let secd_instrs = secdgen(debrujin_info, &prog.main_expr);
     if let Stage::SECD = cli.stage {
-        println!("{}", secd_instrs);
+        writeln!(os, "{}", secd_instrs).unwrap();
     }
 }

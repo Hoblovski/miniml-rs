@@ -104,6 +104,13 @@ pub fn translate_binop(op: crate::ast::BinOp) -> crate::secd::langdef::BinOp {
     }
 }
 
+pub fn translate_unaop(op: crate::ast::UnaOp) -> crate::secd::langdef::UnaOp {
+    match op {
+        crate::ast::UnaOp::Neg => crate::secd::langdef::UnaOp::Neg,
+        crate::ast::UnaOp::Lnot => crate::secd::langdef::UnaOp::Lnot,
+    }
+}
+
 pub fn translate_builtinop(op: crate::ast::BuiltinOp) -> crate::secd::langdef::BuiltinOp {
     match op {
         crate::ast::BuiltinOp::Println => crate::secd::langdef::BuiltinOp::Println,

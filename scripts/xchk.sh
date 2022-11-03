@@ -7,12 +7,13 @@
 
 MINIML=miniml
 RSMINIML=target/debug/miniml
+RSSECDI=target/debug/secdi
 SECDI=secdi
 
 TESTCASES=$(cd testcases; ls -1 *.ml)
 
 if ! mkdir outs; then
-	echo "outs already exists, delete (y/n)?"
+	echo "outs already exists, delete (y/N)?"
 	read -r cmd
 	case $cmd in
 		'y')
@@ -36,8 +37,8 @@ do_case() {
 		echo "RSMINIML failed"
 		return
 	fi
-	secdi outs/$tc.1.secd -b > outs/$tc.1.out 2>&1
-	secdi outs/$tc.2.secd -b > outs/$tc.2.out 2>&1
+	$RSSECDI outs/$tc.1.secd -b > outs/$tc.1.out 2>&1
+	$RSSECDI outs/$tc.2.secd -b > outs/$tc.2.out 2>&1
 	if diff outs/$tc.1.out outs/$tc.2.out -sq >/dev/null 2>&1; then
 		echo ok
 	else

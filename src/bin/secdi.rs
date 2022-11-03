@@ -182,8 +182,13 @@ fn main() {
             }
         }
     } else {
+        let maxstep = cli.maxstep.unwrap_or(usize::MAX);
         let res = loop {
             let stepres = interp.step();
+            if interp.nsteps > maxstep {
+                println!("Reached maxstep {maxstep}. ABORTED.");
+                break "ABORTED".to_string();
+            }
             if let Err(res) = stepres {
                 break res;
             }

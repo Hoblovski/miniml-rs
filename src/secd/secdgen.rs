@@ -8,7 +8,7 @@ use crate::{
 
 use super::{
     langdef::{BrOp, SECDInstr, SECDVal},
-    repr::{translate_binop, translate_builtinop},
+    repr::{translate_binop, translate_builtinop, translate_unaop},
 };
 
 /// * `label_instrs`: maps function name to its instructions.
@@ -138,6 +138,14 @@ impl ExprVisitor<Vec<SECDInstr>> for SECDGen {
             self.visit(lhs),
             self.visit(rhs),
             vec![SECDInstr::Binary(translate_binop(*op))],
+        ]
+        .concat()
+    }
+
+    fn visit_unary(&mut self, op: &crate::ast::UnaOp, sub: &Expr, _eself: &Expr) -> Vec<SECDInstr> {
+        vec![
+            self.visit(sub),
+            vec![SECDInstr::Unary(translate_unaop(*op))],
         ]
         .concat()
     }
