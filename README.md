@@ -39,7 +39,7 @@ adt_triv.ml                                       RSMINIML failed
 ambig.ml                                          RSMINIML failed
 closure.ml                                        ok
 curry.ml                                          ok
-evenodd.ml                                        RSMINIML failed
+evenodd.ml                                        ok
 fact.ml                                           ok
 gcd.ml                                            ok
 helloworld.ml                                     ok
@@ -54,7 +54,7 @@ let_rec_variad_poly.ml                            RSMINIML failed
 match.ml                                          RSMINIML failed
 namer.ml                                          ok
 patmat_tup.ml                                     RSMINIML failed
-relu.ml                                           RSMINIML failed
+relu.ml                                           ok
 summod.ml                                         ok
 tuple.ml                                          RSMINIML failed
 tup_list.ml                                       MINIML failed

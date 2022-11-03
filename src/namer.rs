@@ -102,8 +102,8 @@ impl ExprTransformer<NamerResult> for Namer {
             box body,
         } = e
         {
-            *name = self.define_var(name);
             self.visit(val)?;
+            *name = self.define_var(name);
             self.visit(body)?;
             self.undefine_var(name);
             Ok(())
@@ -130,7 +130,7 @@ impl ExprTransformer<NamerResult> for Namer {
 
             self.visit(body)?;
 
-            for arm in arms.iter_mut() {
+            for arm in arms.iter_mut().rev() {
                 self.undefine_var(&arm.fn_name);
             }
             Ok(())
