@@ -2,13 +2,21 @@
 #
 # cross checking miniml-rs with miniml.
 #
-# run as ./scripts/xchk.sh
+# Usage:
 #
+# $ X=miniml ./scripts/xchk.sh
+#
+# Options:
+#   X
+#       the other implementation of miniml (defaulting to `pyminiml`)
+#   XI
+#       the other implementation of secdi (defaulting to `pysecdi`)
+# You can also use `export X=...` to globally set the options.
 
-MINIML=miniml
+MINIML=${X:-pyminiml}
 RSMINIML=target/debug/miniml
 RSSECDI=target/debug/secdi
-SECDI=secdi
+SECDI=${XI:-secdi}
 
 TESTCASES=$(cd testcases; ls -1 *.ml)
 
